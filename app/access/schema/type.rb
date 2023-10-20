@@ -6,7 +6,7 @@ module Schema
 
     ALL = %i[
       string integer float boolean
-      date time
+      date time file
       json
     ].freeze
     Decimal = ActiveModel::Type::Decimal.new
@@ -18,13 +18,13 @@ module Schema
       self.array = array
     end
 
-    def cast(value, array = array?)
-      return if value.blank?
+    def cast(value, array: array?, default: nil)
+      return default if value.blank?
 
       if type == :json
         value.is_a?(String) ? Oj.load(value) : value
       elsif array
-        value.is_a?(String) ? value.split(ArraySplitter).map { cast(_1, false) } : Array(value)
+        value.is_a?(String) ? value.split(ArraySplitter).map { cast(_1, array: false) } : Array(value)
       else
         case type
         when :string  then value.to_s
@@ -36,8 +36,16 @@ module Schema
         else value
         end
       end
+    rescue => e
+      raise Error, "Cast `#{value}` to `#{type}` failed: #{e.message}"
+    end
+
+    def validate(casted, min: nil, max: nil, in: nil, not_in: nil, **)
+      #
     end
 
     def array? = array
+
+    class Error < StandardError; end
   end
 end

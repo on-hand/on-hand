@@ -6,11 +6,21 @@ module Service::Video
       base_url "https://api.bilibili.com"
     end
 
+    dry do
+      headers do
+        # use! :ua, :cookie
+        string! :cookie
+        string! :ua, to: "User-Agent"
+        string! :referer, default: "https://www.bilibili.com"
+        string! :origin, default: "https://www.bilibili.com"
+      end
+    end
+
     api :video_info, "GET /x/web-interface/view" do
       params { string! :bvid }
 
       response do
-        string :code, to: :status
+        integer! :code, to: :status
       end
     #
     #   response do
@@ -28,7 +38,7 @@ module Service::Video
     #     api(:video_list).map { _... }
     #   end
     #
-    #   action do
+    #   exec do
     #     Video.update_or_create(api(:video_list)).map do |v|
     #       v.subtitles.only_create api(:subtitle, params: { video_id: v.uid })
     #     end
