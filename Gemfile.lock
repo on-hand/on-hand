@@ -74,6 +74,26 @@ GEM
       minitest (>= 5.1)
       mutex_m
       tzinfo (~> 2.0)
+    async (2.6.4)
+      console (~> 1.10)
+      fiber-annotation
+      io-event (~> 1.1)
+      timers (~> 4.1)
+    async-http (0.60.2)
+      async (>= 1.25)
+      async-io (>= 1.28)
+      async-pool (>= 0.2)
+      protocol-http (~> 0.24.0)
+      protocol-http1 (~> 0.15.0)
+      protocol-http2 (~> 0.15.0)
+      traces (>= 0.10.0)
+    async-http-faraday (0.12.0)
+      async-http (~> 0.42)
+      faraday
+    async-io (1.36.0)
+      async
+    async-pool (0.4.0)
+      async (>= 1.25)
     base64 (0.1.1)
     bigdecimal (3.1.4)
     bindex (0.8.1)
@@ -82,6 +102,9 @@ GEM
     builder (3.2.4)
     concurrent-ruby (1.2.2)
     connection_pool (2.4.1)
+    console (1.23.2)
+      fiber-annotation
+      fiber-local
     crass (1.0.6)
     date (3.3.3)
     debug (1.8.0)
@@ -90,6 +113,13 @@ GEM
     drb (2.1.1)
       ruby2_keywords
     erubi (1.12.0)
+    faraday (2.7.11)
+      base64
+      faraday-net_http (>= 2.0, < 3.1)
+      ruby2_keywords (>= 0.0.4)
+    faraday-net_http (3.0.2)
+    fiber-annotation (0.2.0)
+    fiber-local (1.0.0)
     globalid (1.2.1)
       activesupport (>= 6.1)
     i18n (1.14.1)
@@ -98,6 +128,7 @@ GEM
       actionpack (>= 6.0.0)
       railties (>= 6.0.0)
     io-console (0.6.0)
+    io-event (1.3.2)
     irb (1.8.3)
       rdoc
       reline (>= 0.3.8)
@@ -131,7 +162,15 @@ GEM
       racc (~> 1.4)
     nokogiri (1.15.4-x86_64-linux)
       racc (~> 1.4)
+    oj (3.14.2)
     pg (1.5.4)
+    protocol-hpack (1.4.2)
+    protocol-http (0.24.7)
+    protocol-http1 (0.15.1)
+      protocol-http (~> 0.22)
+    protocol-http2 (0.15.1)
+      protocol-hpack (~> 1.4)
+      protocol-http (~> 0.18)
     psych (5.1.1.1)
       stringio
     puma (6.4.0)
@@ -200,6 +239,8 @@ GEM
       railties (>= 6.0.0)
     thor (1.2.2)
     timeout (0.4.0)
+    timers (4.3.5)
+    traces (0.11.1)
     turbo-rails (1.5.0)
       actionpack (>= 6.0.0)
       activejob (>= 6.0.0)
@@ -222,10 +263,13 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  async-http-faraday
   bootsnap
   debug
+  faraday
   importmap-rails
   jbuilder
+  oj
   pg (~> 1.1)
   puma (>= 5.0)
   rails (~> 7.1.1)

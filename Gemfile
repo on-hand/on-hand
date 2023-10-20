@@ -47,6 +47,15 @@ gem "bootsnap", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 
+# [https://github.com/ohler55/oj]
+gem "oj"
+
+# [https://lostisland.github.io/faraday]
+gem "faraday"
+# [https://github.com/socketry/async]
+# gem "async"
+gem "async-http-faraday"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ]
@@ -61,7 +70,6 @@ group :development do
 
   # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
   # gem "spring"
-
 end
 
 group :test do
