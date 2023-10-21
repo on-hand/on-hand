@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module Schema
-  class Type
-    attr_accessor :type, :array
-
+  class FieldType < Struct.new(
+    :type, :array
+  )
     ALL = %i[
       string integer float boolean
       date time file
@@ -12,11 +12,6 @@ module Schema
     Decimal = ActiveModel::Type::Decimal.new
     TrueValues = [ 1, true, *%w[ 1 yes true T YES 是 √ ] ].freeze
     ArraySplitter = /, |,| |\n/
-
-    def initialize(type, array: false)
-      self.type  = type
-      self.array = array
-    end
 
     def cast(value, array: array?, default: nil)
       return default if value.blank?
@@ -40,8 +35,13 @@ module Schema
       raise Error, "Cast `#{value}` to `#{type}` failed: #{e.message}"
     end
 
-    def validate(casted, min: nil, max: nil, in: nil, not_in: nil, **)
-      #
+    def validate(casted, **validators)
+      validators.each do |name, spec|
+        case name
+        when :required
+          validators.delete(name) if !spec || casted.present?
+        end
+      end
     end
 
     def array? = array

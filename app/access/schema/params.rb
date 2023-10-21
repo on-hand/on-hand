@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Schema
-  class Params < Base
+  class Params < Fields
     #
   end
 end

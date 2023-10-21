@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Service
+module Service::Dsl
   class Config
     attr_accessor :_base_url, :_default_http
 

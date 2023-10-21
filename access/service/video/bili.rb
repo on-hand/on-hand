@@ -14,10 +14,16 @@ module Service::Video
         string! :referer, default: "https://www.bilibili.com"
         string! :origin, default: "https://www.bilibili.com"
       end
+
+      define :test do
+        string! :bvid
+        integer :abc
+      end
     end
 
     api :video_info, "GET /x/web-interface/view" do
-      params { string! :bvid }
+      # params { string! :bvid }
+      params { use :test }
 
       response do
         integer! :code, to: :status

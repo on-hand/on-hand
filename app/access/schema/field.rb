@@ -1,39 +1,24 @@
 # frozen_string_literal: true
 
 module Schema
-  class Field
-    attr_accessor :type, :scope, :name, :map_name
-    attr_accessor :required, :default, :validators
-
+  class Field < Struct.new(
+    :type, :scope, :name, :map_name, :default, :validators
+  )
     def self.define(
-      type, name, scope:,
-      required: false,
-      default: nil,
-      array: false,
-      to: nil,
-      **validators,
-      &block
+      type, name, default: nil, array: false, to: nil, **validators, &block
     )
-      new.tap do |it|
-        it.name  = name
-        it.type  = Type.new(type, array:)
-        it.scope = scope.split("::").last.singularize
-        it.map_name = to
-        it.required = required
-        it.default  = default
-        it.validators = validators
-
-        if it.scope == "Header"
-          it.map_name ||= name.to_s.underscore.split("_").map(&:capitalize).join("-")
-        end
-      end
+      new(
+        type: FieldType.new(type:, array:),
+        map_name: to, name:, default:, validators:
+      )
     end
 
     def cast(value)
       type.cast(value, default:).tap do |it|
-        required! if required && it.nil?
-        failed = type.validate(it, **validators)
-        invalid!(failed) if failed.present?
+        if validators.present?
+          failed = type.validate(it, **validators)
+          invalid!(failed) if failed.present?
+        end
       end
     end
 
@@ -41,10 +26,18 @@ module Schema
       { (map_name || name) => cast(value) }
     end
 
+    def dup_with(**options)
+      deep_dup.tap do |it|
+        it.default = options.delete(:default) if options.key?(:default)
+        it.map_name = options.delete(:to) if options.key?(:to)
+        it.scope = options.delete(:scope) if options.key?(:scope)
+        it.validators.merge!(options)
+      end
+    end
+
     private
 
     class Error < StandardError; end
-    def required! = raise Error, "#{scope} `#{name}` is required"
-    def invalid!(msg) = raise Error, "#{scope} `#{name}` is invalid: should #{msg}"
+    def invalid!(msg) = raise Error, "#{scope.schema_type} `#{name}` is invalid: should #{msg}"
   end
 end
