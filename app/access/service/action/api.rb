@@ -10,7 +10,7 @@ module Service::Action
         name:, http:, path:, scope:, base_url: scope.configs._base_url
       ).tap do |it|
         it.instance_eval(&block)
-        # should be executed once
+        # should be executed once to set default dry
         it.params { } unless it.param_fields
         it.headers { } unless it.header_fields
         it.response { } unless it.response_fields
@@ -18,18 +18,15 @@ module Service::Action
     end
 
     def params(&block)
-      self.param_fields =
-        Schema::Params.define(scope: scope.("params"), &block)
+      self.param_fields = scope.("Param").define(&block)
     end
 
     def headers(&block)
-      self.header_fields =
-        Schema::Headers.define(scope: scope.("headers"), &block)
+      self.header_fields = scope.("Header").define(&block)
     end
 
     def response(&block)
-      self.response_fields =
-        Schema::Response.define(scope: scope.("response"), &block)
+      self.response_fields = scope.("Response").define(&block)
     end
 
     # @return [Response]
@@ -49,8 +46,8 @@ module Service::Action
 
     def cast_response(r)
       Response.new(r).tap do |it|
-        it.body = Oj.load(r.body)
-        it.data = response_fields&.cast(it.body)
+        it.body = Oj.load(r.body) # TODO: Oj error
+        it.data = response_fields.cast(it.body).with_indifferent_access
       end
     end
 

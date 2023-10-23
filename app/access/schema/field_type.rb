@@ -40,11 +40,15 @@ module Schema
         case name
         when :required
           validators.delete(name) if !spec || casted.present?
+        # TODO
         end
       end
     end
 
     def array? = array
+    ALL.each do |type_name|
+      define_method("#{type_name}?") { type == type_name }
+    end
 
     class Error < StandardError; end
   end

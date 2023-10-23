@@ -16,25 +16,23 @@ module Service::Video
       end
 
       define :test do
-        string! :bvid
-        integer :abc
+        json :data do
+          string :bvid, to: :iii
+          json :pages, array: true do
+            string! :cid
+          end
+          string :xxx, default: ""
+        end
       end
     end
 
     api :video_info, "GET /x/web-interface/view" do
-      # params { string! :bvid }
-      params { use :test }
+      params { string! :bvid }
 
       response do
         integer! :code, to: :status
+        use :test
       end
-    #
-    #   response do
-    #     json :data do
-    #       string! :bvid, to: :uid
-    #       string  :author
-    #     end
-    #   end
     end
 
     # task :pull do

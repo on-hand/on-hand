@@ -1,43 +1,47 @@
 # frozen_string_literal: true
 
 module Schema
-  class Fields
-    attr_accessor :list, :scope
-    delegate :[], :[]=, :fetch, :map, :each, :merge!, to: :list
+  class Fields < Struct.new(:list, :scope)
+    delegate :[], :[]=, :fetch, :map, :each, :blank?, :present?, to: :list
 
     def self.define(scope:, &block)
-      schema   = new
-      returned = schema.tap do |it|
-        it.list = { }.with_indifferent_access
-        it.scope = scope
+      fields = new(scope:, list: { }.with_indifferent_access)
+      case returned = fields.instance_eval(&block)
+      in Schema::Fields
+        fields = returned.dup_with(scope:)
+      in String|Symbol|[ String|Symbol, * ]
+        fields.use(*Array(returned))
+      in Hash|[ Hash, * ]
+        3
+      else; nil
+      end
 
+      fields.tap do |it|
         # auto-use default dry block
         case it.class.name
         when /Params/   then it.use(:params)
         when /Headers/  then it.use(:headers)
         when /Response/ then it.use(:response)
         end unless scope.inside_dry?
-
-        it.instance_eval(&block)
       end
-      return schema unless returned.is_a?(Hash) || returned.is_a?(Array)
-
-      schema
     end
 
-    def use(*names, **options)
-      names.each { merge(scope.drys.fetch(_1), scope: scoping, **options) }
+    def use(*names, **)
+      names.each do |name|
+        scope = self.scope.dup.tap { _1.fields_type = self.class.name }
+        merge(scope.drys.fetch(name), **, scope:)
+      end; nil
     end
 
     def use!(*names)
-      use(*names, required: true)
+      use(*names, required: true); nil
     end
 
     # @!method string(name, **opt)
     # @!method string!(name, **opt)
     FieldType::ALL.each do |type|
       define_method(type) do |name, **opt, &block|
-        self << Field.define(type, name, **opt, &block)
+        self << Field.define(type:, name:, scope: scope.(name), **opt, &block)
       end
 
       define_method("#{type}!") do |param_name, **opt, &block|
@@ -47,26 +51,27 @@ module Schema
 
     # @param [Hash] values
     def cast(values)
+      values = { } if values.nil?
       map do |name, field|
-        field.cast_with_map(values[name] || values[name.to_sym])
+        field.cast_with_name(values[name] || values[name.to_sym])
       end.reduce(:merge).compact
+    end
+
+    def dup_with(**)
+      self.dup.tap do |it|
+        it.each { it[_1] = _2.dup_with(**) }
+      end
     end
 
     private
 
-    def scoping
-      scope.(self.class.name.split("::").last.underscore)
-    end
-
     def <<(field)
-      field.scope = scoping
       self[field.name] = field
     end
 
-    def merge(other, **options)
-      other_fields = other.is_a?(Hash) ? other : other.list
-      other_fields.transform_values! { _1.dup_with(**options) } if options.present?
-      self.merge!(other_fields)
+    def merge(other, **)
+      return if other.blank?
+      self.list.merge!(other.dup_with(**).list)
     end
   end
 end

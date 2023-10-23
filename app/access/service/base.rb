@@ -10,11 +10,10 @@ module Service
       end
 
       def api(name, path, &block)
-        a, b  = path.split(" ")
-        path  = b.nil? ? a : b
-        http  = b.nil? ? configs._default_http : a.downcase
-        scope = self.scope("api")
-        apis[name] = Action::Api.define(name:, http:, path:, scope:, &block)
+        a, b = path.split
+        path = b.nil? ? a : b
+        http = b.nil? ? configs._default_http : a.downcase
+        apis[name] = Action::Api.define(name:, http:, path:, scope: on("api"), &block)
       end
 
       def task(name, &block)
@@ -27,20 +26,19 @@ module Service
 
       # --- Dry DSLs --- #
 
-      def dry(&block) =
-        self.instance_eval(&block)
+      def dry(&block) = self.instance_eval(&block)
       def define(name, &block) =
-        drys[name] = Schema::Fields.define(scope: scope("dry", "fields"), &block)
+        drys[name] = on("dry Field").define(&block)
       def params(&block) =
-        drys[:params] = Schema::Params.define(scope: scope("dry", "params"), &block)
+        drys[:params] = on("dry Param").define(&block)
       def headers(&block) =
-        drys[:headers] = Schema::Headers.define(scope: scope("dry", "headers"), &block)
+        drys[:headers] = on("dry Header").define(&block)
       def response(&block) =
-        drys[:response] = Schema::Response.define(scope: scope("dry", "response"), &block)
+        drys[:response] = on("dry Response").define(&block)
 
       private
 
-      def scope(*s) = Dsl::Scope.new([ self, *s ])
+      def on(s) = Dsl::Scope.new.(self, *s.split)
     end
 
     # --- Instance Methods --- #
