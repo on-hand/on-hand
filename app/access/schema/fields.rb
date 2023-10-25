@@ -1,11 +1,17 @@
 # frozen_string_literal: true
 
 module Schema
-  class Fields < Struct.new(:list, :scope)
+  class Fields < Struct.new(:list, :scope, :persistence)
     delegate :[], :[]=, :fetch, :map, :each, :blank?, :present?, to: :list
 
-    def self.define(scope:, &block)
-      fields = new(scope:, list: { }.with_indifferent_access)
+    def initialize(**)
+      super(**)
+      self.list = { }.with_indifferent_access
+      self.persistence ||= Persistence.new
+    end
+
+    def self.define(scope:, **, &block)
+      fields = new(scope:, **)
       case returned = fields.instance_eval(&block)
       in Schema::Fields
         fields = returned.dup_with(scope:)
@@ -41,7 +47,8 @@ module Schema
     # @!method string!(name, **opt)
     FieldType::ALL.each do |type|
       define_method(type) do |name, **opt, &block|
-        self << Field.define(type:, name:, scope: scope.(name), **opt, &block)
+        self << Field.define(
+          type:, name:, persistence:, scope: scope.(name:), **opt, &block)
       end
 
       define_method("#{type}!") do |param_name, **opt, &block|
@@ -50,11 +57,17 @@ module Schema
     end
 
     # @param [Hash] values
-    def cast(values)
+    # TODO: html
+    def cast(values, type: :api)
       values = { } if values.nil?
       map do |name, field|
         field.cast_with_name(values[name] || values[name.to_sym])
-      end.reduce(:merge).compact
+      end.reduce(:merge).compact.with_indifferent_access
+    end
+
+    def casted_to_save(casted)
+      persistence.validate_self
+      persistence.cast(casted)
     end
 
     def dup_with(**)
@@ -71,7 +84,9 @@ module Schema
 
     def merge(other, **)
       return if other.blank?
-      self.list.merge!(other.dup_with(**).list)
+
+      self.persistence.merge!(other.persistence)
+      self.list.merge!(other.dup_with(persistence:, **).list)
     end
   end
 end

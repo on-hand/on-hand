@@ -2,16 +2,22 @@
 
 module Schema
   class Field < Struct.new(
-    :type, :scope, :name, :map_name, :default, :validators, :nested_fields
+    :type, :scope, :name, :as, :default, :validators, :nested_fields
   )
     def self.define(
-      type:, name:, scope:, default: nil, array: false, to: nil, **validators, &block
+      type:, name:, scope:, persistence:,
+      default: nil, array: false, save_as: nil, as: save_as,
+      **validators, &block
     )
+      name, array = name.first, true if name.is_a?(Array)
+      scope.path[-1] = { name:, array:, as: }
+      persistence.uid_path = scope.path_aliases if (as || name).to_sym == :uid
+
       new(
         type: FieldType.new(type:, array:),
-        map_name: to, name:, scope:, default:, validators:
+        as:, name:, scope:, default:, validators:
       ).tap do |it|
-        it.scoping(&block) if it.type.json? && block_given?
+        it.scoping(persistence:, &block) if it.type.json? && block_given?
       end
     end
 
@@ -34,23 +40,25 @@ module Schema
     end
 
     def cast_with_name(value)
-      { (map_name || name) => cast(value) }
+      { (as || name) => cast(value) }
     end
 
+    # TODO: refactor
     def dup_with(**options)
       dup.tap do |it|
+        persistence = options.delete(:persistence)
         it.default = options.delete(:default) if options.key?(:default)
-        it.map_name = options.delete(:to) if options.key?(:to)
+        it.as = options.delete(:as) if options.key?(:as)
         if options.key?(:scope)
-          it.scope = options.delete(:scope).(it.name)
-          it.scoping { it.nested_fields } if it.nested_fields.present?
+          it.scope = options.delete(:scope).(name: it.name)
+          it.scoping(persistence:) { it.nested_fields } if it.nested_fields.present?
         end
         it.validators.merge!(options)
       end
     end
 
-    def scoping(&block)
-      self.nested_fields = scope.define(&block)
+    def scoping(**, &block)
+      self.nested_fields = scope.define(**, &block)
     end
 
     private
@@ -58,9 +66,8 @@ module Schema
     class Error < StandardError; end
 
     # TODO: move to fields
-    # TODO: `notes[].title`
     def invalid!(msg)
-      raise Error, "#{scope.fields_type} `#{scope.path.join(".")}` is invalid: should #{msg}"
+      raise Error, "#{scope.fields_type} `#{scope.path_inspect}` is invalid: should #{msg}"
     end
   end
 end

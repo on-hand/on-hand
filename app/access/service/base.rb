@@ -26,7 +26,8 @@ module Service
 
       # --- Dry DSLs --- #
 
-      def dry(&block) = self.instance_eval(&block)
+      def dry(&block) =
+        self.instance_eval(&block)
       def define(name, &block) =
         drys[name] = on("dry Field").define(&block)
       def params(&block) =
@@ -55,11 +56,10 @@ module Service
 
     def self.inherited(subclass)
       subclass.configs = Dsl::Config.new
-      subclass.apis  = { }.with_indifferent_access
-      subclass.tasks = { }.with_indifferent_access
-      subclass.drys  = {
-        params: { }, headers: { }, response: { }
-      }.with_indifferent_access
+      subclass.apis    = OptionHash.new("apis")
+      subclass.tasks   = OptionHash.new("tasks")
+      subclass.drys    = OptionHash.new(
+        { params: { }, headers: { }, response: { } }, "drys")
     end
   end
 end

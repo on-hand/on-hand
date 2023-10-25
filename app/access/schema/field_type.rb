@@ -14,10 +14,10 @@ module Schema
     ArraySplitter = /, |,| |\n/
 
     def cast(value, array: array?, default: nil)
-      return default if value.blank?
+      return default if value.blank? && value != false
 
       if type == :json
-        value.is_a?(String) ? Oj.load(value) : value
+        cast_json(value)
       elsif array
         value.is_a?(String) ? value.split(ArraySplitter).map { cast(_1, array: false) } : Array(value)
       else
@@ -39,17 +39,28 @@ module Schema
       validators.each do |name, spec|
         case name
         when :required
-          validators.delete(name) if !spec || casted.present?
+          validators.delete(name) if !spec || casted.present? || casted == false
         # TODO
         end
       end
     end
 
     def array? = array
+
     ALL.each do |type_name|
       define_method("#{type_name}?") { type == type_name }
     end
 
     class Error < StandardError; end
+
+    private
+
+    def cast_json(value)
+      case value
+      in Hash|[ Hash, * ] then value
+      in String then Oj.load(value)
+      else raise Error, "Cast `#{value}` to `json (hash|[hash])` failed"
+      end
+    end
   end
 end

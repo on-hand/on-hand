@@ -10,18 +10,18 @@ module Service::Video
       headers do
         # use! :ua, :cookie
         string! :cookie
-        string! :ua, to: "User-Agent"
+        string! :ua, as: "User-Agent"
         string! :referer, default: "https://www.bilibili.com"
         string! :origin, default: "https://www.bilibili.com"
       end
 
-      define :test do
+      define :data do
         json :data do
-          string :bvid, to: :iii
-          json :pages, array: true do
-            string! :cid
+          string :bvid#, save_as: :uid
+          json [:pages] do
+            string :cid, as: :uid
+            string :part, as: :title
           end
-          string :xxx, default: ""
         end
       end
     end
@@ -30,8 +30,7 @@ module Service::Video
       params { string! :bvid }
 
       response do
-        integer! :code, to: :status
-        use :test
+        use :data
       end
     end
 

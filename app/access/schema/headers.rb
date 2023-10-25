@@ -3,7 +3,7 @@
 module Schema
   class Headers < Fields
     def <<(field)
-      field.map_name ||= field.name.to_s.underscore.split("_").map(&:capitalize).join("-")
+      field.as ||= field.name.to_s.underscore.split("_").map(&:capitalize).join("-")
       list[field.name] = field
     end
   end

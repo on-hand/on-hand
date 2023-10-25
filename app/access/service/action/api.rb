@@ -3,31 +3,20 @@
 module Service::Action
   class Api < Struct.new(
     :name, :http, :base_url, :path, :scope,
-    :param_fields, :header_fields, :response_fields
+    :param_schema, :header_schema, :response_schema
   )
     def self.define(name:, http:, path:, scope:, &block)
       new(
         name:, http:, path:, scope:, base_url: scope.configs._base_url
-      ).tap do |it|
-        it.instance_eval(&block)
-        # should be executed once to set default dry
-        it.params { } unless it.param_fields
-        it.headers { } unless it.header_fields
-        it.response { } unless it.response_fields
-      end
+      ).tap { _1.instance_eval(&block) }
     end
 
-    def params(&block)
-      self.param_fields = scope.("Param").define(&block)
-    end
-
-    def headers(&block)
-      self.header_fields = scope.("Header").define(&block)
-    end
-
-    def response(&block)
-      self.response_fields = scope.("Response").define(&block)
-    end
+    def params(&block) =
+      self.param_schema = scope.("Param").define(&block)
+    def headers(&block) =
+      self.header_schema = scope.("Header").define(&block)
+    def response(&block) =
+      self.response_schema = scope.("Response").define(&block)
 
     # @return [Response]
     def run(params: { }, headers: { }, conn: nil)
@@ -36,26 +25,40 @@ module Service::Action
       Async do
         cast_response conn.public_send(
           http, path,
-          param_fields.cast(params),
-          header_fields.cast(headers)
+          param_schema.cast(params),
+          header_schema.cast(headers)
         )
       end.wait
     end
 
+    def param_schema = super || params { }
+    def header_schema = super || headers { }
+    def response_schema = super || response { }
+
     private
 
     def cast_response(r)
-      Response.new(r).tap do |it|
-        it.body = Oj.load(r.body) # TODO: Oj error
-        it.data = response_fields.cast(it.body).with_indifferent_access
-      end
+      Response.new(r).tap { _1.schema = response_schema }
     end
 
     class Response
-      attr_accessor :status, :data, :body
+      attr_accessor :status, :raw_body, :schema
 
       def initialize(response)
         self.status = response.status
+        self.raw_body = Oj.load(response.body) # TODO: Oj error
+      end
+      
+      def body
+        @body ||= schema.cast(raw_body, type: :api)
+      end
+
+      def to_save
+        @to_save ||= schema.casted_to_save(body)
+      end
+
+      def save
+        #
       end
     end
   end
