@@ -66,7 +66,6 @@ module Schema
     end
 
     def casted_to_save(casted)
-      persistence.validate_self
       persistence.cast(casted)
     end
 

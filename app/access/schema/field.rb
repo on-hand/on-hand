@@ -11,7 +11,7 @@ module Schema
     )
       name, array = name.first, true if name.is_a?(Array)
       scope.path[-1] = { name:, array:, as: }
-      persistence.uid_path = scope.path_aliases if (as || name).to_sym == :uid
+      persistence.detect_defined(name: (as || name), scope:)
 
       new(
         type: FieldType.new(type:, array:),

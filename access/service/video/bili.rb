@@ -30,6 +30,7 @@ module Service::Video
       params { string! :bvid }
 
       response do
+        integer :code
         use :data
       end
     end
