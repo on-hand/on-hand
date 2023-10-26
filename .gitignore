@@ -41,3 +41,4 @@
 .idea/*
 .DS_Store
 coverage
+.byebug_history
